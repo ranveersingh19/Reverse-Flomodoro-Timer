@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Timer</title>
+    <style>
+        :root {
+            --bg-color: #030712;
+            --panel-bg: rgba(31, 41, 55, 0.6);
+            --border-color: rgba(75, 85, 99, 0.3);
+            --text-main: #f9fafb;
+            --text-muted: #9ca3af;
+            --orange-accent: #fb923c;
+            --blue-accent: #60a5fa;
+            --red-accent: #ef4444;
+            --font-main: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            --font-mono: "JetBrains Mono", "Cascadia Code", "Source Code Pro", "SF Mono", monospace;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: var(--font-main);
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            transition: background 0.5s ease;
+        }
+
+        .controls-top {
+            position: fixed;
+            top: 2.5rem;
+            right: 2.5rem;
+            display: flex;
+            align-items: center;
+            gap: 1.25rem;
+        }
+
+        .btn-reset-main {
+            background: rgba(17, 24, 39, 0.6);
+            border: 1px solid rgba(75, 85, 99, 0.3);
+            color: var(--text-muted);
+            padding: 0.6rem 1.25rem;
+            border-radius: 0.85rem;
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.25em;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-reset-main:hover {
+            color: var(--red-accent);
+            border-color: rgba(239, 68, 68, 0.4);
+        }
+
+        .btn-icon {
+            background: none; border: none; color: var(--text-muted);
+            cursor: pointer; padding: 0.5rem; transition: all 0.2s;
+            display: flex; align-items: center; justify-content: center;
+        }
+
+        .btn-icon:hover { color: white; }
+
+        .glass-panel {
+            background: var(--panel-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--border-color);
+            width: 95%;
+            max-width: 56rem;
+            border-radius: 3rem;
+            padding: 5.5rem 2rem;
+            text-align: center;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6);
+        }
+
+        #mode-label {
+            font-size: 0.875rem;
+            font-weight: 700;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.35em;
+            margin-bottom: 2rem;
+            height: 1.25rem;
+        }
+
+        .time-display-wrapper {
+            display: flex;
+            justify-content: center;
+            align-items: baseline;
+            font-family: var(--font-mono);
+            font-size: clamp(6rem, 18vw, 13rem);
+            font-weight: 800;
+            line-height: 1;
+            margin-bottom: 2rem;
+            user-select: none;
+            font-variant-numeric: tabular-nums;
+        }
+
+        #main-time { transition: color 0.5s ease; }
+
+        .colon {
+            display: inline-block;
+            position: relative;
+            top: -0.08em;
+            padding: 0 0.1em;
+        }
+
+        #sub-time {
+            color: var(--text-muted);
+            font-size: 1rem;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.2em;
+            margin-bottom: 4.5rem;
+            height: 1.5rem;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 1.25rem;
+            width: 100%;
+            max-width: 32rem;
+            margin: 0 auto;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 1.5rem;
+            border-radius: 1.25rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.15em;
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            border: 1px solid transparent;
+            font-size: 0.95rem;
+        }
+
+        .btn-orange { background: rgba(251, 146, 60, 0.1); border-color: rgba(251, 146, 60, 0.2); color: var(--orange-accent); }
+        .btn-orange:hover { background: rgba(251, 146, 60, 0.2); }
+
+        .btn-blue { background: rgba(59, 130, 246, 0.1); border-color: rgba(59, 130, 246, 0.2); color: var(--blue-accent); }
+        .btn-blue:hover { background: rgba(59, 130, 246, 0.2); }
+
+        .btn-pause {
+            background: rgba(31, 41, 55, 0.5);
+            border: 1px solid #374151;
+            color: var(--text-muted);
+            padding: 0 2rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .btn:active { transform: scale(0.95); }
+
+        #settings-modal {
+            position: fixed; inset: 0;
+            background: rgba(0, 0, 0, 0.95);
+            backdrop-filter: blur(12px);
+            display: none; align-items: center; justify-content: center;
+            z-index: 100; padding: 1.5rem;
+        }
+
+        .modal-content {
+            background: #111827; border: 1px solid #1f2937;
+            border-radius: 3.5rem; width: 100%; max-width: 42rem; padding: 4.5rem;
+        }
+
+        .input-box {
+            background: #030712; padding: 2.5rem; border-radius: 2.5rem;
+            border: 1px solid #1f2937; display: flex; align-items: center;
+            gap: 2.5rem; margin-bottom: 4rem;
+        }
+
+        input[type="number"] {
+            background: transparent; border: none; color: var(--blue-accent);
+            font-size: 4.5rem; font-weight: 700; width: 8rem;
+            text-align: center; outline: none; font-family: var(--font-mono);
+        }
+
+        .btn-save {
+            width: 100%; background: #2563eb; color: white; padding: 1.75rem;
+            border-radius: 1.75rem; font-size: 1.5rem; font-weight: 700;
+            text-transform: uppercase; border: none; cursor: pointer;
+        }
+
+        .color-orange { color: var(--orange-accent) !important; }
+        .color-blue { color: var(--blue-accent) !important; }
+        .color-white { color: var(--text-main) !important; }
+    </style>
+</head>
+<body>
+
+    <div class="controls-top">
+        <button id="btn-reset-timer-main" class="btn-reset-main">Reset (R)</button>
+        <button id="btn-settings" class="btn-icon">
+            <svg width="34" height="34" viewBox="0 0 24 24" fill="currentColor" stroke="none">
+                <path fill-rule="evenodd" d="M12 1.5 L14.87 5.07 L19.42 4.58 L18.93 9.13 L22.5 12 L18.93 14.87 L19.42 19.42 L14.87 18.93 L12 22.5 L9.13 18.93 L4.58 19.42 L5.07 14.87 L1.5 12 L5.07 9.13 L4.58 4.58 L9.13 5.07 Z M15.5 12 A3.5 3.5 0 1 0 8.5 12 A3.5 3.5 0 1 0 15.5 12 Z"/>
+            </svg>
+        </button>
+    </div>
+
+    <main style="width: 100%; display: flex; justify-content: center;">
+        <div class="glass-panel">
+            <p id="mode-label"></p>
+            <div class="time-display-wrapper" id="main-time-container">
+                <span id="main-time" class="color-white">00:00</span>
+            </div>
+            <p id="sub-time">Chill to build focus</p>
+            <div class="btn-group">
+                <button id="btn-chill" class="btn btn-orange">Chill (C)</button>
+                <button id="btn-focus" class="btn btn-blue">Focus (F)</button>
+                <button id="btn-pause" class="btn btn-pause">
+                    <svg id="p-svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <path id="p-path" d="M5 3l14 9-14 9V3z"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </main>
+
+    <div id="settings-modal">
+        <div class="modal-content">
+            <h2 style="font-size: 2.5rem; font-weight: 800; margin-bottom: 3.5rem;">Settings</h2>
+            <div class="input-box">
+                <input type="number" id="input-multiplier" value="4" min="1" step="0.5">
+                <div style="color: var(--text-muted); text-transform: uppercase; font-size: 1rem; font-weight: 600;">
+                    Focus is <span id="multi-display" class="color-blue" style="font-weight: 800; font-size: 1.25rem;">4</span>x<br>longer than chill.
+                </div>
+            </div>
+            <button id="btn-close-settings" class="btn-save">Save & Apply</button>
+        </div>
+    </div>
+
+    <script>
+        let mode = localStorage.getItem('timer_mode') || 'idle';
+        let isRunning = false;
+        let cTime = parseInt(localStorage.getItem('timer_cTime')) || 0;
+        let fTime = parseInt(localStorage.getItem('timer_fTime')) || 0;
+        let mult = parseFloat(localStorage.getItem('timer_mult')) || 4;
+
+        const mainTime = document.getElementById('main-time');
+        const subTime = document.getElementById('sub-time');
+        const modeLabel = document.getElementById('mode-label');
+        const pPath = document.getElementById('p-path');
+        const modal = document.getElementById('settings-modal');
+
+        const icons = {
+            pause: "M6 4h4v16H6zM14 4h4v16h-4z",
+            play: "M5 3l14 9-14 9V3z"
+        };
+
+        function formatPlain(s) {
+            const h = Math.floor(s / 3600);
+            const m = Math.floor((s % 3600) / 60);
+            const sec = Math.floor(s % 60);
+            return (h > 0 ? h + ":" : "") + m.toString().padStart(2, '0') + ":" + sec.toString().padStart(2, '0');
+        }
+
+        function format(s) {
+            return formatPlain(s).replace(/:/g, '<span class="colon">:</span>');
+        }
+
+        function update() {
+            pPath.setAttribute('d', isRunning ? icons.pause : icons.play);
+            if (mode === 'chill') {
+                mainTime.innerHTML = format(cTime);
+                mainTime.className = "color-orange";
+                modeLabel.innerText = isRunning ? "CHILL" : "CHILL (PAUSED)";
+                subTime.innerText = "Focus Potential: " + formatPlain(Math.floor(cTime * mult));
+            } else if (mode === 'focus') {
+                mainTime.innerHTML = format(fTime);
+                mainTime.className = "color-blue";
+                modeLabel.innerText = isRunning ? "FOCUS" : "FOCUS (PAUSED)";
+                subTime.innerText = "Stay in the zone";
+            } else {
+                mainTime.innerHTML = "00<span class='colon'>:</span>00";
+                mainTime.className = "color-white";
+                modeLabel.innerText = "";
+                subTime.innerText = "Chill to build focus";
+            }
+            document.title = isRunning ? "[" + formatPlain(mode === 'chill' ? cTime : fTime) + "] " + mode.toUpperCase() : 'Timer Paused';
+        }
+
+        let lastTick = null;
+
+        setInterval(() => {
+            if (!isRunning) { lastTick = null; return; }
+            const now = Date.now();
+            if (lastTick === null) { lastTick = now; return; }
+            const secs = Math.floor((now - lastTick) / 1000);
+            if (secs < 1) return;
+            lastTick += secs * 1000;
+            if (mode === 'chill') {
+                cTime += secs;
+            } else if (mode === 'focus') {
+                fTime -= secs;
+                if (fTime <= 0) {
+                    fTime = 0;
+                    isRunning = false;
+                    if (Notification.permission === "granted") new Notification("Focus Complete", { body: "Time to chill!" });
+                }
+            }
+            update();
+            localStorage.setItem('timer_cTime', cTime);
+            localStorage.setItem('timer_fTime', fTime);
+        }, 250);
+
+        document.getElementById('btn-chill').onclick = () => {
+            if (Notification.permission !== "granted") Notification.requestPermission();
+            if (mode !== 'chill') cTime = 0;
+            mode = 'chill'; isRunning = true; update();
+        };
+        document.getElementById('btn-focus').onclick = () => {
+            if (Notification.permission !== "granted") Notification.requestPermission();
+            if (mode !== 'focus') fTime = Math.floor(cTime * mult);
+            mode = 'focus'; isRunning = true; update();
+        };
+        document.getElementById('btn-pause').onclick = () => { if (mode !== 'idle') isRunning = !isRunning; update(); };
+        const resetAll = () => { mode = 'idle'; isRunning = false; cTime = 0; fTime = 0; update(); };
+        document.getElementById('btn-reset-timer-main').onclick = resetAll;
+        document.getElementById('btn-settings').onclick = () => modal.style.display = 'flex';
+        document.getElementById('btn-close-settings').onclick = () => {
+            mult = parseFloat(document.getElementById('input-multiplier').value) || 4;
+            document.getElementById('multi-display').innerText = mult;
+            localStorage.setItem('timer_mult', mult);
+            modal.style.display = 'none';
+            update();
+        };
+
+        window.onkeydown = (e) => {
+            if (modal.style.display === 'flex') return;
+            let k = e.key.toLowerCase();
+            if (e.code === 'Space') { e.preventDefault(); if (mode !== 'idle') { isRunning = !isRunning; update(); } }
+            if (k === 'c') document.getElementById('btn-chill').click();
+            if (k === 'f') document.getElementById('btn-focus').click();
+            if (k === 'r') resetAll();
+        };
+
+        document.getElementById('multi-display').innerText = mult;
+        document.getElementById('input-multiplier').value = mult;
+        update();
+    </script>
+</body>
+</html>
