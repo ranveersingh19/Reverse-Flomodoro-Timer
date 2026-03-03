@@ -96,7 +96,7 @@
             justify-content: center;
             align-items: baseline;
             font-family: var(--font-mono);
-            font-size: clamp(6rem, 18vw, 13rem);
+            font-size: clamp(3rem, 11vw, 8rem);
             font-weight: 800;
             line-height: 1;
             margin-bottom: 2rem;
@@ -201,7 +201,7 @@
 <body>
 
     <div class="controls-top">
-        <button id="btn-reset-timer-main" class="btn-reset-main">Reset (R)</button>
+        <button id="btn-reset-timer-main" class="btn-reset-main">Reset (X)</button>
         <button id="btn-settings" class="btn-icon">
             <svg width="34" height="34" viewBox="0 0 24 24" fill="currentColor" stroke="none">
                 <path fill-rule="evenodd" d="M12 1.5 L14.87 5.07 L19.42 4.58 L18.93 9.13 L22.5 12 L18.93 14.87 L19.42 19.42 L14.87 18.93 L12 22.5 L9.13 18.93 L4.58 19.42 L5.07 14.87 L1.5 12 L5.07 9.13 L4.58 4.58 L9.13 5.07 Z M15.5 12 A3.5 3.5 0 1 0 8.5 12 A3.5 3.5 0 1 0 15.5 12 Z"/>
@@ -243,7 +243,7 @@
 
     <script>
         let mode = localStorage.getItem('timer_mode') || 'idle';
-        let isRunning = false;
+        let isRunning = mode !== 'idle';
         let cTime = parseInt(localStorage.getItem('timer_cTime')) || 0;
         let fTime = parseInt(localStorage.getItem('timer_fTime')) || 0;
         let mult = parseFloat(localStorage.getItem('timer_mult')) || 4;
@@ -263,7 +263,7 @@
             const h = Math.floor(s / 3600);
             const m = Math.floor((s % 3600) / 60);
             const sec = Math.floor(s % 60);
-            return (h > 0 ? h + ":" : "") + m.toString().padStart(2, '0') + ":" + sec.toString().padStart(2, '0');
+            return h.toString().padStart(2, '0') + ":" + m.toString().padStart(2, '0') + ":" + sec.toString().padStart(2, '0');
         }
 
         function format(s) {
@@ -283,7 +283,7 @@
                 modeLabel.innerText = isRunning ? "FOCUS" : "FOCUS (PAUSED)";
                 subTime.innerText = "Stay in the zone";
             } else {
-                mainTime.innerHTML = "00<span class='colon'>:</span>00";
+                mainTime.innerHTML = "00<span class='colon'>:</span>00<span class='colon'>:</span>00";
                 mainTime.className = "color-white";
                 modeLabel.innerText = "";
                 subTime.innerText = "Chill to build focus";
@@ -313,20 +313,25 @@
             update();
             localStorage.setItem('timer_cTime', cTime);
             localStorage.setItem('timer_fTime', fTime);
+            localStorage.setItem('timer_mode', mode);
         }, 250);
 
         document.getElementById('btn-chill').onclick = () => {
             if (Notification.permission !== "granted") Notification.requestPermission();
             if (mode !== 'chill') cTime = 0;
-            mode = 'chill'; isRunning = true; update();
+            mode = 'chill'; isRunning = true;
+            localStorage.setItem('timer_mode', mode);
+            update();
         };
         document.getElementById('btn-focus').onclick = () => {
             if (Notification.permission !== "granted") Notification.requestPermission();
             if (mode !== 'focus') fTime = Math.floor(cTime * mult);
-            mode = 'focus'; isRunning = true; update();
+            mode = 'focus'; isRunning = true;
+            localStorage.setItem('timer_mode', mode);
+            update();
         };
         document.getElementById('btn-pause').onclick = () => { if (mode !== 'idle') isRunning = !isRunning; update(); };
-        const resetAll = () => { mode = 'idle'; isRunning = false; cTime = 0; fTime = 0; update(); };
+        const resetAll = () => { mode = 'idle'; isRunning = false; cTime = 0; fTime = 0; localStorage.setItem('timer_mode', 'idle'); localStorage.setItem('timer_cTime', 0); localStorage.setItem('timer_fTime', 0); update(); };
         document.getElementById('btn-reset-timer-main').onclick = resetAll;
         document.getElementById('btn-settings').onclick = () => modal.style.display = 'flex';
         document.getElementById('btn-close-settings').onclick = () => {
@@ -343,7 +348,7 @@
             if (e.code === 'Space') { e.preventDefault(); if (mode !== 'idle') { isRunning = !isRunning; update(); } }
             if (k === 'c') document.getElementById('btn-chill').click();
             if (k === 'f') document.getElementById('btn-focus').click();
-            if (k === 'r') resetAll();
+            if (k === 'x') resetAll();
         };
 
         document.getElementById('multi-display').innerText = mult;
